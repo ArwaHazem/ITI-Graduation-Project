@@ -1,0 +1,94 @@
+---
+- hosts: localhost
+  name: Install Minikube on CentOS
+  become: yes
+  vars:
+    ansible_user: "{{ lookup('env', 'USER') }}" 
+
+  tasks:
+    - name: Check if Docker is installed
+      command: docker --version
+      register: docker_installed
+      ignore_errors: true
+
+    - name: Add Docker repository
+      when: docker_installed.rc != 0
+      command: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+      args:
+        creates: /etc/yum.repos.d/docker-ce.repo
+
+    - name: Install Docker Engine if it wasn't installed
+      when: docker_installed.rc != 0
+      yum:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+
+    - name: Add current user to docker group
+      user:
+        name: "{{ ansible_user }}"  
+        groups: docker
+        append: yes
+        state: present
+
+    - name: Start Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+      become: yes
+
+    - name: Ensure Minikube is not already installed
+      become_user: "{{ ansible_user }}"
+      command: minikube version  
+      register: minikube_installed
+      ignore_errors: true
+
+    - name: Install dependencies if Minikube is not installed
+      when: minikube_installed.failed
+      yum:
+        name:
+          - conntrack
+          - curl
+          - wget
+          - socat
+        state: present
+
+    - name: Download Minikube binary if not installed
+      when: minikube_installed.failed
+      get_url:
+        url: https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+        dest: /usr/local/bin/minikube
+        mode: '0755'
+
+    - name: Ensure kubectl is not already installed
+      become_user: "{{ ansible_user }}"
+      command: kubectl version --client
+      register: kubectl_installed
+      ignore_errors: true
+
+    - name: Fetch the latest kubectl version
+      when: kubectl_installed.failed
+      shell: "curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt"
+      register: kubectl_version
+
+    - name: Download kubectl binary if not installed
+      when: kubectl_installed.failed
+      get_url:
+        url: "https://storage.googleapis.com/kubernetes-release/release/{{ kubectl_version.stdout }}/bin/linux/amd64/kubectl"
+        dest: /usr/local/bin/kubectl
+        mode: '0755'
+
+    - name: Start Minikube with Docker driver
+      become: no
+      become_user: "{{ ansible_user }}"
+      shell: minikube start --driver=docker 
+
+    - name: Enable Minikube ingress
+      become_user: "{{ ansible_user }}"
+      shell: minikube addons enable ingress
+      ignore_errors: true
