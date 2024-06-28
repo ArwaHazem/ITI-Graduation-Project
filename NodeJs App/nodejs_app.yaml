@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: node-app-deployment
+  namespace: dev
+  labels:
+    app: nodejs-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodejs-app
+  template:
+    metadata:
+      labels:
+        app: nodejs-app
+    spec:
+      containers:
+      - name: nodejs-app
+        image: 10.102.72.176:5000/repository/nodejs_repo/nodejs:latest
+        ports:
+          - containerPort: 3000
+        env: 
+          - name: HOST  
+            value: mysql-h
+          - name: USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secret
+                key: username
+          - name: PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secret
+                key: password      
+          - name: DATABASE
+            valueFrom:
+              secretKeyRef:
+                name: mysql-secret
+                key: database-name
