@@ -1,0 +1,33 @@
+pipeline {
+    agent any
+    environment {
+        registry_url = '10.100.151.133:5000/repository/nodejs_repo/'
+        registry_credentials_id = 'nexus-creds'
+
+    }
+
+   
+    stages {
+        stage('Login to Registry') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: registry_credentials_id, passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+                        sh "echo ${PASSWORD} | docker login ${registry_url} -u ${USERNAME} --password-stdin"
+                    }
+                }
+            }
+        }            
+          stage('Deploy Image on cluster') {
+            steps {
+                // clone repo
+                git credentialsId:'github-creds' ,url:'https://github.com/ArwaHazem/ITI-Graduation-Project', branch:'main' 
+                
+                // Deploy the app from the Nexus registry to minikube
+                sh """
+                cd "NodeJs App"
+                kubectl apply -f nodejs_app.yaml
+                """
+            }
+          }
+    }
+}
