@@ -15,6 +15,18 @@ resource "kubernetes_cluster_role" "jenkins_role" {
     resources  = ["deployments"]
     verbs      = ["get", "watch", "list", "create"]
   }
+
+  rule {
+    api_groups = ["apps"]
+    resources  = ["deployments"]
+    verbs      = ["get", "watch", "list", "create"]
+  }
+
+  rule {
+    api_groups = [""]
+    resources  = ["secrets"]
+    verbs      = ["get", "watch", "list"]
+  }
 }
 
 resource "kubernetes_cluster_role_binding" "jenkins_role_binding" {

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: nodejs-app
-        image: 10.102.72.176:5000/repository/nodejs_repo/nodejs:latest
+        image: 10.100.248.2:5000/repository/nodejs_repo/nodejs:latest
         ports:
           - containerPort: 3000
         env: 
