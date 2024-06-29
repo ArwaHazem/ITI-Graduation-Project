@@ -11,12 +11,6 @@ resource "kubernetes_cluster_role" "jenkins_role" {
   }
 
   rule {
-    api_groups = [""]
-    resources  = ["deployments"]
-    verbs      = ["get", "watch", "list", "create"]
-  }
-
-  rule {
     api_groups = ["apps"]
     resources  = ["deployments"]
     verbs      = ["get", "watch", "list", "create"]
@@ -55,7 +49,7 @@ resource "kubernetes_cluster_role" "tools_role" {
   rule {
     api_groups = ["apps"]
     resources  = ["deployments"]
-    verbs      = ["create", "get", "watch", "list"]
+    verbs      = ["create", "get", "watch", "list", "patch"]  
   }
 
   rule {
@@ -72,8 +66,8 @@ resource "kubernetes_cluster_role_binding" "tools_role_binding" {
 
   subject {
     kind      = "ServiceAccount"
-    name      = "default"
-    namespace = kubernetes_namespace.tools.metadata[0].name
+    name      = kubernetes_service_account.jenkins.metadata[0].name  
+    namespace = kubernetes_service_account.jenkins.metadata[0].namespace
   }
 
   role_ref {
